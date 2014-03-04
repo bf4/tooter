@@ -35,9 +35,11 @@ class App
   def run
     @client.run
   end
+
   def stream
     @client.stream
   end
+
   def print
     @client.print
   end
