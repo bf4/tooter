@@ -73,16 +73,16 @@ if $0 == __FILE__
   store = Store.new(filename)
   report = App::Report.new(store)
 
-  results = report.recommended
-  pattern = nil
+  # results = report.recommended
+  # pattern = nil
   #
-  # pattern = ARGV[0]
-  # if pattern.to_s.size > 0
-  #   results = report.search(pattern)
-  # else
-  #   results = report.map.to_a
-  # end
-  # results = [
+  pattern = ARGV[0] # 'noelrap|kerrizor|dhh|danmayer'
+  if pattern.to_s.size > 0
+    results = report.search(pattern)
+  else
+    results = report.map.to_a
+  end
+  # test_results = [
   #   {
   #     :created_at => 'some time',
   #     :full_text  => 'something with ruby in it',
