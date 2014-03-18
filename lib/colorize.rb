@@ -43,6 +43,23 @@ module Colorize
     "\033[#{bold ? '1;' : '0;'}#{ansi_code}#{msg}\033[0m"
   end
 
+  require 'English'
+  def highlight_pattern(c_text, pattern)
+    c_text = c_text.gsub(Regexp.new(pattern)) do
+      prematch  = $PREMATCH #$`
+      term      = $MATCH # $&
+      postmatch = $POSTMATCH # $'
+      start = Colorize.escape_codes(prematch).first
+      reset = Colorize.escape_codes(postmatch).first
+      highlighted_term = Colorize::Background.cyan(term)
+      if start and reset
+        reset + highlighted_term + start
+      else
+        highlighted_term
+      end
+    end
+  end
+
   module Text
     module_function
     def black(msg, bold=false)
