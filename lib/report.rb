@@ -23,6 +23,32 @@ class App::Report
     puts
   end
 
+  def pretty_print_tweet(tweet, pattern)
+    # report.print_tweet(tweet)
+    created_at = Colorize::Text.green       tweet[:created_at]
+    c_text = Colorize::Text.yellow(tweet[:full_text])
+    c_text = c_text.gsub(Regexp.new(pattern)) do
+      prematch  = $PREMATCH #$`
+      term      = $MATCH # $&
+      postmatch = $POSTMATCH # $'
+      start = Colorize.escape_codes(prematch).first
+      reset = Colorize.escape_codes(postmatch).first
+      highlighted_term = Colorize::Background.cyan(term)
+      if start and reset
+        reset + highlighted_term + start
+      else
+        highlighted_term
+      end
+    end if pattern
+    id         = Colorize::Text.cyan        tweet[:id]
+    user_name  = Colorize::Text.red         tweet[:user_name]
+    yield if block_given?
+    if score = tweet[:score]
+      score = Colorize::Text.white "Score: #{score}"
+    end
+    puts "#{score}  #{created_at}\t#{c_text}\t#{id}\t#{user_name}\n\n"
+  end
+
   def recommended
     select do |tweet|
       score = 0
@@ -91,33 +117,8 @@ if $0 == __FILE__
 
   #   }
   # ]
-  def print_tweet(tweet, pattern)
-    # report.print_tweet(tweet)
-    created_at = Colorize::Text.green       tweet[:created_at]
-    c_text = Colorize::Text.yellow(tweet[:full_text])
-    c_text = c_text.gsub(Regexp.new(pattern)) do
-      prematch  = $PREMATCH #$`
-      term      = $MATCH # $&
-      postmatch = $POSTMATCH # $'
-      start = Colorize.escape_codes(prematch).first
-      reset = Colorize.escape_codes(postmatch).first
-      highlighted_term = Colorize::Background.cyan(term)
-      if start and reset
-        reset + highlighted_term + start
-      else
-        highlighted_term
-      end
-    end if pattern
-    id         = Colorize::Text.cyan        tweet[:id]
-    user_name  = Colorize::Text.red         tweet[:user_name]
-    yield if block_given?
-    if score = tweet[:score]
-      score = Colorize::Text.white "Score: #{score}"
-    end
-    puts "#{score}  #{created_at}\t#{c_text}\t#{id}\t#{user_name}\n\n"
-  end
   results.each do |tweet|
-    print_tweet(tweet, pattern) do
+    report.pretty_print_tweet(tweet, pattern) do
       if parent = tweet[:parent]
         puts "\tReplyTo: #{parent[:full_text]}\t#{parent[:user_name]}\n"
       end
