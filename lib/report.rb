@@ -104,7 +104,11 @@ if $0 == __FILE__
   #
   pattern = ARGV[0] # 'noelrap|kerrizor|dhh|danmayer'
   if pattern.to_s.size > 0
-    results = report.search(pattern)
+    if pattern == 'recommended'
+      results = report.recommended
+    else
+      results = report.search(pattern)
+    end
   else
     results = report.map.to_a
   end
