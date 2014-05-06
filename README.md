@@ -68,3 +68,7 @@ export LESSCHARSET=utf-8 # don't print out unicode as e.g. <E2><80><99>
 ## TODO:
 
 * search across various tweet slices (for dates)
+
+## LICENSE
+
+MIT, by Benjamin Fleischer, 2014-Present
