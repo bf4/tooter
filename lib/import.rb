@@ -5,6 +5,7 @@ class Import
 
   def initialize(store)
     @store = store
+    @print_imported_tweets = true
   end
 
   def from_tweet_entities(tweet_entities)
@@ -32,17 +33,12 @@ class Import
   # end
   def tweet_entity_to_hash(tweet_entity)
     tweet = Tweet.new(tweet_entity)
-    text = tweet.full_text
-    created_at = Colorize::Text.green       tweet.created_at
-    c_text     = Colorize::Text.yellow      text
-    id         = Colorize::Text.cyan        tweet.id
-    user_name  = Colorize::Text.red         tweet.user.screen_name
-    puts "#{created_at}\t#{c_text}\t#{id}\t#{user_name}\n\n"
+    print_imported_tweet(tweet)
     user = tweet.user
     data = {
       :id => tweet.id,
       :uri => tweet.uri.to_s,
-      :full_text => text,
+      :full_text => tweet.full_text,
       :favorited => tweet.favorited,
       :in_reply_to_screen_name => tweet.in_reply_to_screen_name,
       :in_reply_to_tweet_id    => tweet.in_reply_to_tweet_id,
@@ -59,7 +55,15 @@ class Import
       :user_id => user.id,
       :user_name => user.screen_name,
     }
+  end
 
+  def print_imported_tweet(tweet)
+    return unless @print_imported_tweets
+    created_at = Colorize::Text.green       tweet.created_at
+    c_text     = Colorize::Text.yellow      tweet.full_text
+    id         = Colorize::Text.cyan        tweet.id
+    user_name  = Colorize::Text.red         tweet.user.screen_name
+    puts "#{created_at}\t#{c_text}\t#{id}\t#{user_name}\n\n"
   end
 
   def save(tweets)
