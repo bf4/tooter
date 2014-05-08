@@ -68,13 +68,21 @@ module ExpandUrl
     end
 
     def url_to_uri(url, previous_url)
-      # URI.escape will encode invalid characters e.g. spaces to %20
+      # A URL with spaces in it is not parseable by URI()
+      # URI.escape will encode spaces to %20
+      # but also '#' to %23
+      # Thus, URI.escape would make
       # http://t.co/53ymETE2Hd
       # http://airpa.ir/1mDCbMG
       # http://www.airpair.com/review/536abac9175a3a0200000021?utm_medium=farm-link&utm_campaign=farm-may&utm_term=ruby, ruby-on-rails and javascript&utm_source=twitter-airpair
-      # becomes ->
+      # into _valid_ URL
       # http://www.airpair.com/review/536abac9175a3a0200000021?utm_medium=farm-link&utm_campaign=farm-may&utm_term=ruby,%20ruby-on-rails%20and%20javascript&utm_source=twitter-airpair
-      uri = URI(URI.escape url)
+      # but make
+      # https://devcenter.heroku.com/articles/s3#naming-buckets
+      # into the _incorrect_ URL
+      # https://devcenter.heroku.com/articles/s3%23naming-buckets
+      # so we're just going to escape spaces for now
+      uri = URI(url.gsub(' ', '%23'))
       unless uri.respond_to?(:request_uri)
         if previous_url == :no_previous_url
           STDERR.puts "********* #{url.inspect}"
