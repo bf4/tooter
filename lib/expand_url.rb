@@ -36,7 +36,7 @@ module ExpandUrl
       fail ExpansionErrors::BadResponse, "Can't get a good response for #{url}, got #{response.inspect}", caller
     end
   rescue ExpansionError => e
-    block_given? ? yield(url, e) : raise(e)
+    block_given? ? yield(url, e) : raise
   end
 
   class HttpRequest
