@@ -68,7 +68,13 @@ module ExpandUrl
     end
 
     def url_to_uri(url, previous_url)
-      uri = URI(url)
+      # URI.escape will encode invalid characters e.g. spaces to %20
+      # http://t.co/53ymETE2Hd
+      # http://airpa.ir/1mDCbMG
+      # http://www.airpair.com/review/536abac9175a3a0200000021?utm_medium=farm-link&utm_campaign=farm-may&utm_term=ruby, ruby-on-rails and javascript&utm_source=twitter-airpair
+      # becomes ->
+      # http://www.airpair.com/review/536abac9175a3a0200000021?utm_medium=farm-link&utm_campaign=farm-may&utm_term=ruby,%20ruby-on-rails%20and%20javascript&utm_source=twitter-airpair
+      uri = URI(URI.escape url)
       unless uri.respond_to?(:request_uri)
         if previous_url == :no_previous_url
           STDERR.puts "********* #{url.inspect}"
