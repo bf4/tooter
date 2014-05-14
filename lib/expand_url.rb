@@ -24,8 +24,10 @@ module ExpandUrl
     when 300..399
       log "url: #{url}\tresponse: #{response.inspect}"
       if redirects_to_follow.to_i > 0
-        log "Following redirect"
-        expand_url(response['Location'], redirects_to_follow - 1, url)
+        previous_url = url
+        url = response['Location']
+        log "Following redirect to #{url}"
+        expand_url(url, redirects_to_follow - 1, previous_url)
       else
         url
       end
@@ -66,10 +68,10 @@ module ExpandUrl
         request = Net::HTTP::Get.new(@uri.request_uri)
         http.request(request)
       end
-    rescue EOFError => e
+    rescue Timeout::Error, EOFError => e
       BasicResponse.new(@url, 200, e)
     rescue *HTTP_ERRORS, SocketError => e
-      raise ExpansionErrors::BadResponse.new(e)
+      raise ExpansionErrors::BadResponse, e.message, e.backtrace
     end
 
     def url_to_uri(url, previous_url)
