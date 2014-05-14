@@ -40,12 +40,15 @@ module ExpandUrl
   end
 
   class HttpRequest
-    HTTP_ERRORS = [Timeout::Error, Errno::EINVAL, Errno::ECONNRESET,
+    require 'timeout'
+    HTTP_ERRORS = [Timeout::Error, Errno::EINVAL, Errno::ECONNRESET, Errno::ETIMEDOUT,
          Net::HTTPBadResponse, Net::HTTPHeaderSyntaxError, Net::ProtocolError]
     class BasicResponse < Struct.new(:url, :code, :error); end
     ExpansionErrors = ::ExpandUrl::ExpansionErrors
+    CONNECT_TIMEOUT = 2
 
     def initialize(url, previous_url)
+      @url = url
       @uri = url_to_uri(url, previous_url)
       @internal_redirect = false
     end
@@ -59,10 +62,12 @@ module ExpandUrl
       if  http.use_ssl = (@uri.scheme == 'https')
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
-      request = Net::HTTP::Get.new(@uri.request_uri)
-      http.request(request)
+      Timeout::timeout(CONNECT_TIMEOUT) do
+        request = Net::HTTP::Get.new(@uri.request_uri)
+        http.request(request)
+      end
     rescue EOFError => e
-      BasicResponse.new(url, 200, e)
+      BasicResponse.new(@url, 200, e)
     rescue *HTTP_ERRORS, SocketError => e
       raise ExpansionErrors::BadResponse.new(e)
     end
