@@ -5,12 +5,10 @@ require_relative 'expand_url'
 # https://github.com/rubyrogues/rubyfriends/pull/43/files
 # http://devblog.avdi.org/2012/01/31/decoration-is-best-except-when-it-isnt/
 require_relative 'colorize'
+App = Class.new unless defined?(App)
 class App::Tweet < SimpleDelegator
   ExpandUrl = ::ExpandUrl
-  # from http://daringfireball.net/2010/07/improved_regex_for_matching_urls
-  #      https://gist.github.com/gruber/249502
-  #      https://gist.github.com/gruber/8891611
-  URI_REGEX = %r{(?i)\b((?:[a-z][\w-]+:(?:/{1,3}|[a-z0-9%])|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))}
+  URI_REGEX = URI::Parser.new.make_regexp(['http', 'https'])
   def full_text
     process_text(super)
   end
@@ -26,23 +24,57 @@ class App::Tweet < SimpleDelegator
     text
   end
   def expand_url(url, retries=1)
-    begin
-      expanded_url = ExpandUrl.expand_url(url) do |bad_url, e|
-        if retries.zero?
-          debug_expansion_error(url, e)
-          bad_url
-        else
-          expand_url(url[0..-2], 0)
-        end
+    ExpandUrl.expand_url(url) do |bad_url, e|
+      if retries.zero?
+        debug_expansion_error(url, e)
+        bad_url
+      else
+        shortened_url = url[0..-2]
+        expanded_url = expand_url(shortened_url, retries - 1)
+        url.start_with?(expanded_url) ? url : expanded_url
       end
-    rescue ExpandUrl::ExpansionError => e
-      debug_expansion_error(url, e)
-      expanded_url = url
     end
     # %Q(<a href="#{expanded_url}" target="_blank">#{url}</a>)
-    expanded_url
   end
   def debug_expansion_error(url, e = $!)
     STDERR.puts Colorize::Background.red "\n#{e.class}: failed expanding #{url.inspect}. #{e.message}"
   end
+  # from http://daringfireball.net/2010/07/improved_regex_for_matching_urls
+  #      https://gist.github.com/gruber/249502
+  #      https://gist.github.com/gruber/8891611
+  # also see http://tools.ietf.org/html/rfc3986#appendix-B
+  # def self.uri_regex
+  #   @uri_regex ||= %r{
+  #     \b
+  #     (                           # Capture 1: entire matched URL
+  #       (?:
+  #         [a-z][\w-]+:                # URL protocol and colon
+  #         (?:
+  #           /{1,3}                        # 1-3 slashes
+  #           |                             #   or
+  #           [a-z0-9%]                     # Single letter or digit or '%'
+  #                                         # (Trying not to match e.g. "URI::Escape")
+  #         )
+  #         |                           #   or
+  #         www\d{0,3}[.]               # "www.", "www1.", "www2." … "www999."
+  #         |                           #   or
+  #         [a-z0-9.\-]+[.][a-z]{2,4}/  # looks like domain name followed by a slash
+  #       )
+  #       (?:                           # One or more:
+  #         [^\s()<>]+                      # Run of non-space, non-()<>
+  #         |                               #   or
+  #         \(([^\s()<>]+|(\([^\s()<>]+\)))*\)  # balanced parens, up to 2 levels
+  #       )+
+  #       (?:                           # End with:
+  #         \(([^\s()<>]+|(\([^\s()<>]+\)))*\)  # balanced parens, up to 2 levels
+  #         |                                   #   or
+  #         [^\s`!()\[\]{};:'".,<>?«»“”‘’]      # not a space or one of these punct char
+  #       )
+  #     )\b
+  #   }xi
+  # end
+end
+
+if $0 == __FILE__
+  puts App::Tweet.new({}).process_text(ARGV.join)
 end
