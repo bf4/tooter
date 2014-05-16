@@ -52,11 +52,10 @@ class App::Report
   def recommended
     select do |tweet|
       score = 0
-      if retweet_count = tweet[:retweet_count].to_i
-        unless retweet_count.zero?
-          retweet_score = (Math.exp(retweet_count) % retweet_count)
-          score += retweet_score.ceil unless retweet_score.nan?
-        end
+      retweet_count = tweet[:retweet_count].to_i
+      unless retweet_count.zero?
+        retweet_score = (Math.exp(retweet_count) % retweet_count)
+        score += retweet_score.ceil unless retweet_score.nan?
       end
       score += 3 if tweet[:in_reply_to_tweet_id]
       score += 4 if tweet[:favorited]

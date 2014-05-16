@@ -12,11 +12,18 @@ class App::Tweet < SimpleDelegator
   def full_text
     process_text(super)
   end
+  def full_text_urls
+    attrs[:entities][:urls]
+  end
+  def full_text_expanded_urls_mapping
+    Hash[full_text_urls.map{|m| m.values_at(:url, :expanded_url)}]
+  end
   def process_text(text)
-    # make links anchors
+    text = text.gsub(URI_REGEX, full_text_expanded_urls_mapping)
     text = text.gsub(URI_REGEX) do |url|
       expand_url(url)
     end
+    # make links anchors
     # # link hashtags
     # text.gsub! /#(\w+)/, '<a href="http://twitter.com/search?q=%23\\1">#\\1</a>'
     # # link users
