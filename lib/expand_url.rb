@@ -66,6 +66,7 @@ module ExpandUrl
       end
       Timeout::timeout(CONNECT_TIMEOUT) do
         request = Net::HTTP::Get.new(@uri.request_uri)
+        add_http_headers(request)
         http.request(request)
       end
     rescue Timeout::Error, EOFError => e
@@ -105,6 +106,20 @@ module ExpandUrl
       uri
     rescue URI::InvalidURIError, SocketError => e
       raise ExpansionErrors::BadUrl.new(e)
+    end
+
+    def add_http_headers(request)
+      request.initialize_http_header(
+      {
+        "User-Agent" =>
+  "Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.8.1.6) Gecko/20070725 Firefox/2.0.0.6",
+        "Referer" => "http://www.google.com",
+        "Accept" => "text/xml,application/xml,application/xhtml+xml,text/html;q=0.9,text/plain;q=0.8,image/png,*/*;q=0.5",
+        "Accept-Language" => "en-us,en;q=0.5",
+        "Accept-Encoding" => " gzip,deflate",
+        "Accept-Charset" =>  "ISO-8859-1,utf-8;q=0.7,*;q=0.7",
+        "Keep-Alive" => "300"
+      })
     end
 
   end
