@@ -44,7 +44,7 @@ class App::Tweet < SimpleDelegator
     # %Q(<a href="#{expanded_url}" target="_blank">#{url}</a>)
   end
   def debug_expansion_error(url, e = $!)
-    STDERR.puts Colorize::Background.red "\n#{e.class}: failed expanding #{url.inspect}. #{e.message}"
+    STDERR.puts Colorize::Background.red "\n#{e.class}: failed expanding #{url.inspect} in tweet #{id}. #{e.message}. Full text urls were #{full_text_urls}"
   end
   # from http://daringfireball.net/2010/07/improved_regex_for_matching_urls
   #      https://gist.github.com/gruber/249502
