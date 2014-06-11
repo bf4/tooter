@@ -65,7 +65,7 @@ module ExpandUrl
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
       Timeout::timeout(CONNECT_TIMEOUT) do
-        request = Net::HTTP::Get.new(@uri.request_uri)
+        request = Net::HTTP::Head.new(@uri.request_uri)
         add_http_headers(request)
         http.request(request)
       end
