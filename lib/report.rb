@@ -4,29 +4,114 @@ require 'colorize'
 require 'English'
 class App::Report
   include Enumerable
+  StoredTweet = ::Struct.new(:tweet) do
+    attr_accessor :score
+    def parent
+      tweet[:parent]
+    end
+    %w[
+      id
+      uri
+      full_text
+      favorited?
+      in_reply_to_screen_name
+      in_reply_to_tweet_id
+      in_reply_to_user_id
+      lang
+      retweet_count
+      retweeted?
+      created_at
+      uris
+      media
+      hashtags
+      attrs
+      full_text_urls
+      dump
+      user_id
+      user_name
+    ].map(&:intern).each do |attr|
+      define_method(attr) do tweet[attr] end
+    end
+    def text
+      attrs[:text]
+    end
+    def favorite_count
+      attrs[:favorite_count]
+    end
+    def retweeted_status
+      attrs[:retweeted_status]
+    end
+    def user_followers_count
+      user_attrs[:followers_count]
+    end
+    def user_friends_count
+      user_attrs[:friends_count]
+    end
+    def user_friends_count
+      user_attrs[:friends_count]
+    end
+    def user_listed_count
+      user_attrs[:listed_count]
+    end
+    def user_statuses_count
+      user_attrs[:statuses_count]
+    end
+    private
+    def attrs
+      @attrs ||= begin
+                   attrs = tweet[:attrs]
+                   case attrs
+                   when String
+                     eval(attrs)
+                   when NilClass
+                     require 'pp'
+                     p score
+                     pp tweet
+                     fail "nil attrs? #{tweet.keys.inspect}"
+                   else
+                     attrs
+                   end
+                 end
+    end
+    def entities
+      @entities ||= attrs[:entities]
+    end
+    def user_attrs
+      @user_attrs ||= attrs[:user]
+    end
+  end
 
-  def initialize(store)
+  def initialize(store,io=STDOUT)
     @store = store
+    @io = io
+  end
+
+  def io=(io)
+    @io = io
+  end
+
+  def puts(msg='')
+    @io.puts(msg << "\n")
   end
 
   def print
     each do |tweet|
-      print_tweet(tweet)
+      self.class.print_tweet(tweet, @io)
     end
   end
 
-  def print_tweet(tweet)
-    puts
-    puts %w(full_text user created_at id).map(&:intern).
-      map{|attr| tweet[attr] }.
+  def self.print_tweet(tweet, io=STDOUT)
+    io.puts
+    io.puts %w(full_text user created_at id).map(&:intern).
+      map{|attr| tweet.send(attr) }.
       join("\n\t")
-    puts
+    io.puts
   end
 
-  def pretty_print_tweet(tweet, pattern)
+  def self.pretty_print_tweet(tweet, pattern, io=STDOUT)
     # report.print_tweet(tweet)
-    created_at = Colorize::Text.green       tweet[:created_at]
-    c_text = Colorize::Text.yellow(tweet[:full_text])
+    created_at = Colorize::Text.green       tweet.created_at
+    c_text = Colorize::Text.yellow(tweet.full_text)
     c_text = c_text.gsub(Regexp.new(pattern)) do
       prematch  = $PREMATCH #$`
       term      = $MATCH # $&
@@ -40,26 +125,26 @@ class App::Report
         highlighted_term
       end
     end if pattern
-    id         = Colorize::Text.cyan        tweet[:id]
-    user_name  = Colorize::Text.red         tweet[:user_name]
+    id         = Colorize::Text.cyan        tweet.id
+    user_name  = Colorize::Text.red         tweet.user_name
     yield if block_given?
-    if score = tweet[:score]
+    if score = tweet.score
       score = Colorize::Text.white "Score: #{score}"
     end
-    puts "#{score}  #{created_at}\t#{c_text}\t#{id}\t#{user_name}\n\n"
+    io.puts "#{score}  #{created_at}\t#{c_text}\t#{id}\t#{user_name}\n\n"
   end
 
   def recommended
     select do |tweet|
       score = 0
-      retweet_count = tweet[:retweet_count].to_i
+      retweet_count = tweet.retweet_count.to_i
       unless retweet_count.zero?
         retweet_score = (Math.exp(retweet_count) % retweet_count)
         score += retweet_score.ceil unless retweet_score.nan?
       end
-      score += 3 if tweet[:in_reply_to_tweet_id]
-      score += 4 if tweet[:favorited]
-      tweet[:score] = score
+      score += 3 if tweet.in_reply_to_tweet_id
+      score += 4 if tweet.favorited?
+      tweet.score = score
       score >= 7
     end
   end
@@ -72,59 +157,22 @@ class App::Report
     # pattern = Regexp.new(pattern)
     pattern = Regexp.new(term)
     select do |tweet|
-      tweet[:full_text] =~ pattern
+      tweet.full_text =~ pattern
     end
   end
 
-      # :in_reply_to_screen_name => tweet.in_reply_to_screen_name,
-      # :in_reply_to_tweet_id    => tweet.in_reply_to_tweet_id,
-      # :in_reply_to_user_id     => tweet.in_reply_to_user_id,
   def each
     @store.read do |store|
       store.roots.each do |key|
         tweet = store[key].dup
         if reply_tweet_id = tweet[:in_reply_to_tweet_id]
-          tweet.update(:parent => store[reply_tweet_id])
+          if parent  = store[reply_tweet_id]
+            tweet.update(:parent => StoredTweet.new(parent))
+          end
         end
-        yield tweet
+        yield StoredTweet.new(tweet)
       end
     end
   end
 
-end
-
-if $0 == __FILE__
-  filename = App.root.join('tweets').to_s
-  store = Store.new(filename)
-  report = App::Report.new(store)
-
-  # results = report.recommended
-  # pattern = nil
-  #
-  pattern = ARGV[0] # 'noelrap|kerrizor|dhh|danmayer'
-  if pattern.to_s.size > 0
-    if pattern == 'recommended'
-      results = report.recommended
-    else
-      results = report.search(pattern)
-    end
-  else
-    results = report.map.to_a
-  end
-  # test_results = [
-  #   {
-  #     :created_at => 'some time',
-  #     :full_text  => 'something with ruby in it',
-  #     :id         => '5',
-  #     :user_name  => 'schmo',
-
-  #   }
-  # ]
-  results.each do |tweet|
-    report.pretty_print_tweet(tweet, pattern) do
-      if parent = tweet[:parent]
-        puts "\tReplyTo: #{parent[:full_text]}\t#{parent[:user_name]}\n"
-      end
-    end
-  end
 end

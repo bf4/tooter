@@ -27,19 +27,7 @@ class App::Client
     STDERR.puts message
     raise e
   end
-  # https://github.com/sferik/twitter/blob/master/lib/twitter/rest/favorites.rb
-  # https://github.com/sferik/twitter/blob/master/lib/twitter/rest/undocumented.rb
-  # https://github.com/sferik/twitter/wiki/apps
 
-  # http://rdoc.info/gems/twitter/Twitter/REST/Timelines#user_timeline-instance_method
-  # Options Hash (options):
-  #   :since_id (Integer) — Returns results with an ID greater than (that is, more recent than) the specified ID.
-  #   :max_id (Integer) — Returns results with an ID less than (that is, older than) or equal to the specified ID.
-  #   :count (Integer) — Specifies the number of records to retrieve. Must be less than or equal to 200.
-  #   :trim_user (Boolean, String, Integer) — Each tweet returned in a timeline will include a user object with only the author's numerical ID when set to true, 't' or 1.
-  #   :exclude_replies (Boolean, String, Integer) — This parameter will prevent replies from appearing in the returned timeline. Using exclude_replies with the count parameter will mean you will receive up-to count tweets - this is because the count parameter retrieves that many tweets before filtering out retweets and replies.
-  #   :contributor_details (Boolean, String, Integer) — Specifies that the contributors element should be enhanced to include the screen_name of the contributor.
-  #   :include_rts (Boolean, String, Integer) — Specifies that the timeline should include native retweets in addition to regular tweets. Note: If you're using the trim_user parameter in conjunction with include_rts, the retweets will no longer contain a full user object.
   def stored_ids
     @store.read {|store| store.roots }
   end

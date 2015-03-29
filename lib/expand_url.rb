@@ -59,19 +59,23 @@ module ExpandUrl
       @internal_redirect
     end
 
-    def response
+    def response(request_method = Net::HTTP::Head, retries = 1)
       http = Net::HTTP.new(@uri.host, @uri.port)
       if  http.use_ssl = (@uri.scheme == 'https')
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
       end
       Timeout::timeout(CONNECT_TIMEOUT) do
-        request = Net::HTTP::Head.new(@uri.request_uri)
+        request = request_method.new(@uri.request_uri)
         add_http_headers(request)
         http.request(request)
       end
+    rescue Net::HTTPMethodNotAllowed
+      raise unless retries > 0
+      log "Trying again, got #{$!}"
+      response(Net::HTTP::Get, retries - 1)
     rescue Timeout::Error, EOFError => e
       BasicResponse.new(@url, 200, e)
-    rescue *HTTP_ERRORS, SocketError => e
+    rescue *HTTP_ERRORS, SocketError, Errno::ENETDOWN => e
       raise ExpansionErrors::BadResponse, e.message, e.backtrace
     end
 
