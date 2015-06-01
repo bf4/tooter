@@ -1,3 +1,10 @@
+GIT
+  remote: git://github.com/bf4/naught.git
+  revision: c9895a2af1e27ab818d97e422fd2d1e8a17fbca5
+  branch: bf/fix_black_hole
+  specs:
+    naught (1.0.0)
+
 GEM
   remote: https://rubygems.org/
   specs:
@@ -14,7 +21,6 @@ GEM
     memoizable (0.4.2)
       thread_safe (~> 0.3, >= 0.3.1)
     multipart-post (2.0.0)
-    naught (1.0.0)
     simple_oauth (0.3.1)
     thread_safe (0.3.5)
     twitter (5.14.0)
@@ -34,4 +40,5 @@ PLATFORMS
 
 DEPENDENCIES
   dotenv
+  naught!
   twitter
